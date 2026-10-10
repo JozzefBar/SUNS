@@ -86,21 +86,25 @@ print(two_types.groupby("VisitorType")["Revenue"].mean().round(3))
 
 
 # 6. chybajuce hodnoty v povodnom datasete a nakup
-missing_cols = ["Informational_Duration", "VisitorType", "ProductRelated_Duration"]
+missing_cols = ["ProductRelated_Duration", "VisitorType", "Informational_Duration"]
 rows = []
 for col in missing_cols:
-    is_missing = raw[col].isna()
-    rows.append({"stĺpec": col, "hodnota chýba": raw[is_missing]["Revenue"].mean() * 100,
-                 "hodnota je vyplnená": raw[~is_missing]["Revenue"].mean() * 100})
-    print(col, "chyba:", is_missing.sum(), "z toho nakup:", raw[is_missing]["Revenue"].sum())
-missing_rates = pd.DataFrame(rows).set_index("stĺpec")
-print(missing_rates.round(1))
-ax = missing_rates.plot.barh(figsize=(8, 4), color=["gray", "seagreen"])
-for container in ax.containers:
-    ax.bar_label(container, fmt="%.1f %%", padding=3)
-ax.set_xlabel("podiel návštev s nákupom (%)")
+    for label, part in [("chýba", raw[raw[col].isna()]), ("vyplnená", raw[raw[col].notna()])]:
+        rows.append({"skupina": f"{col}\n{label} ({len(part)} riadkov)",
+                     "bez nákupu": (~part["Revenue"]).mean() * 100,
+                     "nákup": part["Revenue"].mean() * 100})
+        print(col, label, len(part), "riadkov, z toho nakup:", part["Revenue"].sum())
+shares = pd.DataFrame(rows).set_index("skupina")
+print(shares.round(1))
+
+# kazdy pruh ma spolu 100 %, sivá cast su navstevy bez nakupu
+ax = shares.plot.barh(stacked=True, figsize=(9, 5), color=["lightgray", "seagreen"], width=0.75)
+for i, value in enumerate(shares["nákup"]):
+    ax.text(101, i, f"nákup {value:.1f} %", va="center")
+ax.set_xlabel("podiel návštev (%)")
 ax.set_ylabel("")
-ax.set_xlim(0, 55)
+ax.set_xlim(0, 125)
+ax.legend(loc="upper center", bbox_to_anchor=(0.4, -0.12), ncol=2)
 plt.title("Chýbajúce hodnoty v pôvodných dátach a nákup")
 plt.tight_layout()
 plt.savefig(PLOTS_DIR / "eda_missing.png", dpi=150)

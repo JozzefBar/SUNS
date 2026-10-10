@@ -47,15 +47,16 @@ if __name__ == "__main__":
     results = []
     for train_size, val_size, test_size in SPLITS:
         result = run_experiment(X, y, val_size, test_size)
+        X_train, X_val, X_test, *_ = split_data(X, y, val_size, test_size)   # len kvoli poctom riadkov
         result = {"rozdelenie": f"{train_size:.0%} / {val_size:.0%} / {test_size:.0%}",
-                  "train riadkov": round(len(X) * train_size),
-                  "test riadkov": round(len(X) * test_size), **result}
+                  "train riadkov": len(X_train), "test riadkov": len(X_test), **result}
         results.append(result)
-    table = pd.DataFrame(results)
-    print(table.round(2).to_string(index=False))
+    table = pd.DataFrame(results).round(2)
+    print(table.to_string(index=False))
 
-    # najlepsie rozdelenie podla uspesnosti na testovacej mnozine
-    best = SPLITS[table["test (%)"].idxmax()]
+    # najlepsie rozdelenie podla uspesnosti na testovacej mnozine,
+    # pri zhode ma prednost vacsia testovacia mnozina
+    best = SPLITS[table.sort_values(["test (%)", "test riadkov"]).index[-1]]
     print("\nnajlepsie rozdelenie:", best)
     model, X_train, X_test, y_train, y_test = train_model(X, y, best[1], best[2], seed=0)
 
