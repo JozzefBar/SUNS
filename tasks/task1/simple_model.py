@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay
 
 from preprocessing import PLOTS_DIR, prepare_xy, split_data, scale
 
@@ -26,7 +26,6 @@ def run_experiment(X, y, val_size, test_size):
         rows.append({
             "train": accuracy_score(y_train, model.predict(X_train)),
             "test": accuracy_score(y_test, model.predict(X_test)),
-            "f1_test": f1_score(y_test, model.predict(X_test)),
         })
     runs = pd.DataFrame(rows) * 100
     return {
@@ -34,7 +33,6 @@ def run_experiment(X, y, val_size, test_size):
         "test (%)": runs["test"].mean(),
         "test odchylka": runs["test"].std(),
         "rozdiel train-test": runs["train"].mean() - runs["test"].mean(),
-        "F1 test (%)": runs["f1_test"].mean(),
     }
 
 
@@ -70,6 +68,8 @@ if __name__ == "__main__":
         ax.set_title(f"{name} množina, úspešnosť {accuracy:.2f} %")
         ax.set_xlabel("predikcia")
         ax.set_ylabel("skutočnosť")
+    fig.suptitle("Konfúzne matice logistickej regresie\n"
+                 f"rozdelenie {best[0]:.0%} / {best[1]:.0%} / {best[2]:.0%} (trénovacia / validačná / testovacia), seed 0")
     plt.tight_layout()
     plt.savefig(PLOTS_DIR / "confusion_simple_model.png", dpi=150)
 

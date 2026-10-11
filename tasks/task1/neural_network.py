@@ -98,6 +98,12 @@ def accuracies(model, data):
     return result
 
 
+def describe(hidden_layers, lr, dropout=0.0):
+    # popis nastavenia do podnadpisu grafu
+    layers = ", ".join(str(neurons) for neurons in hidden_layers)
+    return f"skryté vrstvy: {layers} | rýchlosť učenia: {lr:g} | dropout: {dropout:g}"
+
+
 def plot_history(history, filename, title, best_epoch=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     axes[0].plot(history["epoch"], history["train_loss"], label="trénovacia")
@@ -144,14 +150,16 @@ if __name__ == "__main__":
     model, history, _ = train_network(data, big_network, lr=0.001, epochs=200)
     print(accuracies(model, data))
     print(history.iloc[[0, 4, 9, 19, 49, 99, 199]].round(3).to_string(index=False))
-    plot_history(history, "nn_overfit_history.png", "Pretrénovaná sieť, 200 epoch bez EarlyStopping")
-    plot_confusion(model, data, "nn_overfit_confusion.png", "Pretrénovaná sieť")
+    settings_text = describe(big_network, 0.001)
+    plot_history(history, "nn_overfit_history.png", "Pretrénovaná sieť, 200 epoch bez EarlyStopping\n" + settings_text)
+    plot_confusion(model, data, "nn_overfit_confusion.png", "Pretrénovaná sieť\n" + settings_text)
 
     print("\n--- ta ista siet s EarlyStopping ---")
     model, history, best_epoch = train_network(data, big_network, lr=0.001, epochs=200, patience=10)
     print(accuracies(model, data), "najlepsia epocha:", best_epoch, "zastavene po:", len(history))
-    plot_history(history, "nn_early_history.png", "Tá istá sieť s EarlyStopping (patience 10)", best_epoch)
-    plot_confusion(model, data, "nn_early_confusion.png", "Sieť s EarlyStopping")
+    plot_history(history, "nn_early_history.png",
+                 "Tá istá sieť s EarlyStopping (patience 10)\n" + settings_text, best_epoch)
+    plot_confusion(model, data, "nn_early_confusion.png", "Sieť s EarlyStopping (patience 10)\n" + settings_text)
 
     print("\n--- experimenty ---")
     # zaklad: skryte vrstvy (64, 32), lr 0.001, bez dropoutu, vsetko s EarlyStopping
@@ -169,7 +177,8 @@ if __name__ == "__main__":
     for number, settings in enumerate(experiments, start=1):
         model, history, best_epoch = train_network(data, patience=10, **settings)
         result = accuracies(model, data)
-        runs.append({"model": model, "history": history, "best_epoch": best_epoch, "number": number})
+        runs.append({"model": model, "history": history, "best_epoch": best_epoch,
+                     "settings_text": describe(**settings)})
         settings.update({"experiment": number, "epocha": best_epoch,
                          "train (%)": result["train"], "test (%)": result["test"]})
     table = pd.DataFrame(experiments).set_index("experiment")
@@ -178,7 +187,7 @@ if __name__ == "__main__":
     for kind, label, index in [("best", "Najlepší", table["test (%)"].idxmax()),
                                ("worst", "Najhorší", table["test (%)"].idxmin())]:
         run = runs[index - 1]
-        title = f"{label} experiment (č. {index})"
+        title = f"{label} experiment (č. {index})\n" + run["settings_text"]
         plot_history(run["history"], f"nn_{kind}_history.png", title, run["best_epoch"])
         plot_confusion(run["model"], data, f"nn_{kind}_confusion.png", title)
         print(kind, "experiment:", index)
