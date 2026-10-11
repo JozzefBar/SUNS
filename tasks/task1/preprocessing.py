@@ -125,12 +125,6 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(PLOTS_DIR / "outliers_sorted.png", dpi=150)
 
-    # pre porovnanie: kolko riadkov by oznacilo bezne pravidlo 1.5 * IQR
-    for col in columns:
-        q1, q3 = df[col].quantile([0.25, 0.75])
-        limit = q3 + 1.5 * (q3 - q1)
-        print(f"IQR {col}: hranica {limit:.1f}, nad nou {(df[col] > limit).sum()} riadkov")
-
     rows_before = len(df)
     df = remove_outliers(df)
     print("odstranenych riadkov:", rows_before - len(df), "zostava:", len(df))

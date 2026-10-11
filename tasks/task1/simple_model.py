@@ -11,18 +11,20 @@ SPLITS = [(0.90, 0.05, 0.05), (0.80, 0.10, 0.10), (0.70, 0.15, 0.15),
           (0.60, 0.20, 0.20), (0.40, 0.30, 0.30), (0.10, 0.45, 0.45)]
 
 
-def train_model(X, y, val_size, test_size, seed):
+def train_model(X, y, val_size, test_size, seed, make_model=None):
+    # make_model = funkcia, ktora vrati novy nenatrenovany model, bez nej sa pouzije logisticka regresia
     X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, val_size, test_size, seed)
     X_train, X_val, X_test = scale(X_train, X_val, X_test)
-    model = LogisticRegression(max_iter=1000).fit(X_train, y_train)
+    model = make_model() if make_model is not None else LogisticRegression(max_iter=1000)
+    model.fit(X_train, y_train)
     return model, X_train, X_test, y_train, y_test
 
 
-def run_experiment(X, y, val_size, test_size):
+def run_experiment(X, y, val_size, test_size, make_model=None):
     # to iste rozdelenie s roznym seedom, aby vysledok nezavisel od jedneho nahodneho vyberu
     rows = []
     for seed in SEEDS:
-        model, X_train, X_test, y_train, y_test = train_model(X, y, val_size, test_size, seed)
+        model, X_train, X_test, y_train, y_test = train_model(X, y, val_size, test_size, seed, make_model)
         rows.append({
             "train": accuracy_score(y_train, model.predict(X_train)),
             "test": accuracy_score(y_test, model.predict(X_test)),
