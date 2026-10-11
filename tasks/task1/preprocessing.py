@@ -11,6 +11,8 @@ PLOTS_DIR.mkdir(exist_ok=True)
 
 # stlpce, ktore su kategorie (aj ked su niektore zapisane cislom)
 CATEGORICAL = ["Month", "VisitorType", "OperatingSystems", "Browser", "Region", "TrafficType"]
+# horne hranice pre outliery, zvolene podla skoku v zoradenych hodnotach
+UPPER_LIMITS = {"Administrative_Duration": 10000, "ProductRelated": 2000}
 
 
 def load_data():
@@ -19,16 +21,16 @@ def load_data():
 
 def remove_outliers(df):
     # hodnoty, ktore podla popisu stlpcov nemozu existovat
-    df = df[~(df["Administrative_Duration"] < 0)]
-    df = df[~(df["ProductRelated_Duration"] < 0)]   # ~(x < 0) necha aj NaN, tie riesim zvlast
-    df = df[df["BounceRates"].between(0, 1)]
-    df = df[df["VisitorType"] != "Admin"]
-    # prilis velke hodnoty, hranice su zvolene podla skoku v zoradenych hodnotach
-    df = df[df["Administrative_Duration"] < 10000]
-    df = df[df["ProductRelated"] < 2000]
+    df = df[~(df["Administrative_Duration"] < 0)]   # 5 riadkov
+    df = df[~(df["ProductRelated_Duration"] < 0)]   # 5 riadkov, ~(x < 0) necha aj NaN, tie riesim zvlast
+    df = df[df["BounceRates"].between(0, 1)]        # 8 riadkov
+    df = df[df["VisitorType"] != "Admin"]           # 1 riadok
+    # prilis velke hodnoty
+    df = df[df["Administrative_Duration"] < UPPER_LIMITS["Administrative_Duration"]]  # 15 riadkov
+    df = df[df["ProductRelated"] < UPPER_LIMITS["ProductRelated"]]                    # 10 riadkov
     # rovnake SessionID = ten isty riadok dvakrat
-    df = df.drop_duplicates(subset="SessionID")
-    return df
+    df = df.drop_duplicates(subset="SessionID")     # 3 riadky
+    return df   # spolu prec 47 riadkov, z 12 333 zostane 12 286
 
 
 def handle_missing(df, info_duration="drop"):
@@ -100,8 +102,15 @@ if __name__ == "__main__":
     columns = ["Administrative_Duration", "ProductRelated", "ProductRelated_Duration", "PageValues"]
     fig, axes = plt.subplots(2, 2, figsize=(11, 8))
     for ax, col in zip(axes.flat, columns):
-        values = df[col].dropna().sort_values().values
-        ax.plot(values[-200:], ".")
+        values = df[col].dropna().sort_values().values[-200:]
+        ax.plot(values, ".")
+        if col in UPPER_LIMITS:
+            # cervena ciara = hranica, cervene body = odstranene hodnoty
+            limit = UPPER_LIMITS[col]
+            removed = values >= limit
+            ax.plot(removed.nonzero()[0], values[removed], ".", color="red")
+            ax.axhline(limit, color="red", linestyle="--", label=f"hranica {limit}, odstránených {removed.sum()}")
+            ax.legend(loc="upper left")
         ax.set_title(col)
         ax.set_xlabel("poradie (200 najväčších hodnôt)")
         print(col, df[col].nlargest(17).round(0).tolist())
