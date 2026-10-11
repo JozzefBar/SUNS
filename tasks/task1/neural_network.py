@@ -7,7 +7,7 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import ConfusionMatrixDisplay
 
-from preprocessing import PLOTS_DIR, prepare_xy, split_data, scale
+from preprocessing import PLOTS_DIR, add_title, prepare_xy, split_data, scale
 
 
 def load_tensors():
@@ -104,7 +104,7 @@ def describe(hidden_layers, lr, dropout=0.0):
     return f"skryté vrstvy: {layers} | rýchlosť učenia: {lr:g} | dropout: {dropout:g}"
 
 
-def plot_history(history, filename, title, best_epoch=None):
+def plot_history(history, filename, title, subtitle, best_epoch=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     axes[0].plot(history["epoch"], history["train_loss"], label="trénovacia")
     axes[0].plot(history["epoch"], history["val_loss"], label="validačná")
@@ -117,13 +117,12 @@ def plot_history(history, filename, title, best_epoch=None):
             ax.axvline(best_epoch, color="gray", linestyle="--", label="najlepšia epocha")
         ax.set_xlabel("epocha")
         ax.legend()
-    fig.suptitle(title)
-    plt.tight_layout()
+    add_title(fig, title, subtitle)
     plt.savefig(PLOTS_DIR / filename, dpi=150)
     plt.close()
 
 
-def plot_confusion(model, data, filename, title):
+def plot_confusion(model, data, filename, title, subtitle):
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
     for ax, name, label in [(axes[0], "train", "trénovacia"), (axes[1], "test", "testovacia")]:
         X, y = data[name]
@@ -135,8 +134,7 @@ def plot_confusion(model, data, filename, title):
         ax.set_title(f"{label} množina, úspešnosť {accuracy:.2f} %")
         ax.set_xlabel("predikcia")
         ax.set_ylabel("skutočnosť")
-    fig.suptitle(title)
-    plt.tight_layout()
+    add_title(fig, title, subtitle)
     plt.savefig(PLOTS_DIR / filename, dpi=150)
     plt.close()
 
@@ -151,15 +149,15 @@ if __name__ == "__main__":
     print(accuracies(model, data))
     print(history.iloc[[0, 4, 9, 19, 49, 99, 199]].round(3).to_string(index=False))
     settings_text = describe(big_network, 0.001)
-    plot_history(history, "nn_overfit_history.png", "Pretrénovaná sieť, 200 epoch bez EarlyStopping\n" + settings_text)
-    plot_confusion(model, data, "nn_overfit_confusion.png", "Pretrénovaná sieť\n" + settings_text)
+    plot_history(history, "nn_overfit_history.png", "Pretrénovaná sieť, 200 epoch bez EarlyStopping", settings_text)
+    plot_confusion(model, data, "nn_overfit_confusion.png", "Pretrénovaná sieť", settings_text)
 
     print("\n--- ta ista siet s EarlyStopping ---")
     model, history, best_epoch = train_network(data, big_network, lr=0.001, epochs=200, patience=10)
     print(accuracies(model, data), "najlepsia epocha:", best_epoch, "zastavene po:", len(history))
     plot_history(history, "nn_early_history.png",
-                 "Tá istá sieť s EarlyStopping (patience 10)\n" + settings_text, best_epoch)
-    plot_confusion(model, data, "nn_early_confusion.png", "Sieť s EarlyStopping (patience 10)\n" + settings_text)
+                 "Tá istá sieť s EarlyStopping (patience 10)", settings_text, best_epoch)
+    plot_confusion(model, data, "nn_early_confusion.png", "Sieť s EarlyStopping (patience 10)", settings_text)
 
     print("\n--- experimenty ---")
     # zaklad: skryte vrstvy (64, 32), lr 0.001, bez dropoutu, vsetko s EarlyStopping
@@ -187,7 +185,7 @@ if __name__ == "__main__":
     for kind, label, index in [("best", "Najlepší", table["test (%)"].idxmax()),
                                ("worst", "Najhorší", table["test (%)"].idxmin())]:
         run = runs[index - 1]
-        title = f"{label} experiment (č. {index})\n" + run["settings_text"]
-        plot_history(run["history"], f"nn_{kind}_history.png", title, run["best_epoch"])
-        plot_confusion(run["model"], data, f"nn_{kind}_confusion.png", title)
+        title = f"{label} experiment (č. {index})"
+        plot_history(run["history"], f"nn_{kind}_history.png", title, run["settings_text"], run["best_epoch"])
+        plot_confusion(run["model"], data, f"nn_{kind}_confusion.png", title, run["settings_text"])
         print(kind, "experiment:", index)

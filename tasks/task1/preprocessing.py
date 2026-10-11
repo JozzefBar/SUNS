@@ -15,6 +15,14 @@ CATEGORICAL = ["Month", "VisitorType", "OperatingSystems", "Browser", "Region", 
 UPPER_LIMITS = {"Administrative_Duration": 10000, "ProductRelated": 2000}
 
 
+def add_title(fig, title, subtitle=None):
+    # tucny nadpis grafu, pod nim normalnym pismom podnadpis
+    fig.suptitle(title, fontweight="bold", y=0.985)
+    if subtitle is not None:
+        fig.text(0.5, 0.9, subtitle, ha="center", fontsize=11)
+    fig.tight_layout(rect=(0, 0, 1, 0.9 if subtitle is not None else 0.96))
+
+
 def load_data():
     return pd.read_csv(TASK_DIR / "online_shoppers.csv")
 
@@ -111,7 +119,7 @@ if __name__ == "__main__":
             ax.plot(removed.nonzero()[0], values[removed], ".", color="red")
             ax.axhline(limit, color="red", linestyle="--", label=f"hranica {limit}, odstránených {removed.sum()}")
             ax.legend(loc="upper left")
-        ax.set_title(col)
+        ax.set_title(col, fontweight="bold")
         ax.set_xlabel("poradie (200 najväčších hodnôt)")
         print(col, df[col].nlargest(17).round(0).tolist())
     plt.tight_layout()

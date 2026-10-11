@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, ConfusionMatrixDisplay
 
-from preprocessing import PLOTS_DIR, prepare_xy, split_data, scale
+from preprocessing import PLOTS_DIR, add_title, prepare_xy, split_data, scale
 
 SEEDS = [0, 1, 2, 3, 4]
 # (trenovacia, validacna, testovacia)
@@ -68,9 +68,8 @@ if __name__ == "__main__":
         ax.set_title(f"{name} množina, úspešnosť {accuracy:.2f} %")
         ax.set_xlabel("predikcia")
         ax.set_ylabel("skutočnosť")
-    fig.suptitle("Konfúzne matice logistickej regresie\n"
-                 f"rozdelenie {best[0]:.0%} / {best[1]:.0%} / {best[2]:.0%} (trénovacia / validačná / testovacia), seed 0")
-    plt.tight_layout()
+    add_title(fig, "Konfúzne matice logistickej regresie",
+              f"rozdelenie {best[0]:.0%} / {best[1]:.0%} / {best[2]:.0%} (trénovacia / validačná / testovacia), seed 0")
     plt.savefig(PLOTS_DIR / "confusion_simple_model.png", dpi=150)
 
     print("\n--- experiment: co s Informational_Duration ---")
