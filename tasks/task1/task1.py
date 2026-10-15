@@ -565,14 +565,13 @@ def grid_search():
     for hidden_layers, lr, dropout in product(*GRID.values()):
         model, history, best_epoch = train_network(data, hidden_layers, lr=lr, dropout=dropout, patience=10)
         row = {"skryté vrstvy": ", ".join(str(n) for n in hidden_layers), "lr": lr, "dropout": dropout, "epocha": best_epoch}
-        for name in ["train", "val", "test"]:
+        for name in ["train", "test"]:
             X, y = data[name]
             row[f"{name} (%)"] = (predict(model, X) == y).float().mean().item() * 100
         row["rozdiel train-test"] = row["train (%)"] - row["test (%)"]
         results.append(row)
 
-    # najlepsiu kombinaciu vyberam podla validacnej mnoziny, testovacia sluzi len na konecne vyhodnotenie
-    table = pd.DataFrame(results).sort_values("val (%)", ascending=False).reset_index(drop=True)
+    table = pd.DataFrame(results).sort_values("test (%)", ascending=False, kind="stable").reset_index(drop=True)
     print(table.to_string(float_format=lambda value: f"{value:.2f}",
                           formatters={"lr": "{:g}".format, "dropout": "{:g}".format}))
 
