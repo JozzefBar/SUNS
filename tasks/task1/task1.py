@@ -350,7 +350,7 @@ def eda():
     shares = pd.DataFrame(rows).set_index("skupina")
     print(shares.round(1))
 
-    # kazdy pruh ma spolu 100 %, sivá cast su navstevy bez nakupu
+    # kazdy pruh ma spolu 100 %, siva cast su navstevy bez nakupu
     ax = shares.plot.barh(stacked=True, figsize=(9, 5), color=["lightgray", "seagreen"], width=0.75)
     for i, value in enumerate(shares["nákup"]):
         ax.text(101, i, f"nákup {value:.1f} %", va="center")
@@ -580,7 +580,7 @@ def grid_search():
         part = table[table["dropout"] == dropout]
         pivot = part.pivot(index="skryté vrstvy", columns="lr", values="test (%)")
         pivot = pivot.loc[[", ".join(str(n) for n in layers) for layers in GRID["hidden_layers"]]]
-        image = ax.imshow(pivot.values, cmap="Blues", vmin=table["test (%)"].min(), vmax=table["test (%)"].max())
+        ax.imshow(pivot.values, cmap="Blues", vmin=table["test (%)"].min(), vmax=table["test (%)"].max())
         ax.set_xticks(range(len(pivot.columns)), [f"{value:g}" for value in pivot.columns])
         ax.set_yticks(range(len(pivot.index)), pivot.index)
         ax.set_xlabel("rýchlosť učenia")
@@ -641,4 +641,3 @@ if __name__ == "__main__":
     for title, step in steps:
         print(f"\n\n########## {title} ##########")
         step()
-    print("\nhotovo, grafy su v priecinku", PLOTS_DIR)
