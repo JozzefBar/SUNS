@@ -87,7 +87,9 @@ def explore_data():
     for col in MEASUREMENTS + ["co"]:
         print(f"{col}: {df[col].min()} az {df[col].max()}")
     print("teplota nad 40 °C:", (df["temperature"] > MAX_TEMPERATURE).sum())
-    print("mesiace s teplotou nad 40 °C:", df[df["temperature"] > MAX_TEMPERATURE]["month"].value_counts().to_dict())
+    hot = df[df["temperature"] > MAX_TEMPERATURE]
+    print("mesiace s teplotou nad 40 °C:", hot["month"].value_counts().to_dict())
+    print("hodiny:", hot["hour"].min(), "az", hot["hour"].max(), "| najvyssia vlhkost:", hot["humidity"].max())
 
     # zoradene hodnoty, hladam skok
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
@@ -110,6 +112,10 @@ def explore_data():
 
     df = remove_outliers(load_data())
     print("po odstraneni duplikatov a outlierov:", len(df))
+    # pravidlo IQR pre co len ako kontrola, co nemazem
+    q1, q3 = df["co"].quantile([0.25, 0.75])
+    limit = q3 + 1.5 * (q3 - q1)
+    print(f"IQR hranica pre co: {limit:.1f}, nad nou {(df['co'] > limit).sum()} hodin")
 
     print("\n--- chybajuce hodnoty ---")
     missing = df.isna().sum()

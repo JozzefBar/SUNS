@@ -45,6 +45,7 @@ SVR_EXPERIMENTS = {
     "RBF, C = 1": SVR(C=1),
     "RBF, C = 10": SVR(C=10),
     "RBF, C = 100": SVR(C=100),
+    "RBF, C = 300": SVR(C=300),
     "RBF, C = 10, epsilon = 0.3": SVR(C=10, epsilon=0.3),
     "RBF, C = 10, gamma = 0.01": SVR(C=10, gamma=0.01),
     "RBF, C = 10, gamma = 0.5": SVR(C=10, gamma=0.5),
@@ -78,6 +79,19 @@ def run_experiments(experiments, X_train, X_test, y_train, y_test):
     best = table.loc[table["R2 test"].idxmax(), "nastavenie"]
     print("najlepsie:", best)
     return experiments[best], best
+
+
+def residual_summary(model, X_test, y_test):
+    # cisla k rozboru rezidualov na testovacej mnozine
+    prediction = model.predict(X_test)
+    residuals = y_test - prediction
+    high = y_test > 5
+    print(f"priemer {residuals.mean():.3f}, chyb nad 1 mg/m3: {(residuals.abs() > 1).sum()},"
+          f" co nad 5: {high.sum()} hodin s priemernym rezidualom {residuals[high].mean():.2f}")
+    low, top = prediction < 2, prediction > 4
+    print(f"RMSE pri predikcii pod 2: {(residuals[low] ** 2).mean() ** 0.5:.3f},"
+          f" nad 4: {(residuals[top] ** 2).mean() ** 0.5:.3f}")
+    print(f"zapornych predikcii: {(prediction < 0).sum()}, najmensia {prediction.min():.2f}")
 
 
 def plot_residuals(model, X_train, X_test, y_train, y_test, filename, title, subtitle):
@@ -159,6 +173,8 @@ if __name__ == "__main__":
 
     print("\n--- rozhodovaci strom ---")
     best_tree, tree_label = run_experiments(TREE_EXPERIMENTS, *data)
+    for label, tree in TREE_EXPERIMENTS.items():
+        print(f"{label}: hlbka {tree.get_depth()}, listov {tree.get_n_leaves()}")
     plot_small_tree(X_train_raw, X_test_raw, y_train, y_test)
 
     print("\n--- nahodny les ---")
@@ -167,6 +183,10 @@ if __name__ == "__main__":
 
     print("\n--- SVM ---")
     best_svr, svr_label = run_experiments(SVR_EXPERIMENTS, *data)
+    # trenovacie rezidualy SVR vzhladom na pasmo epsilon = 0.1 (libsvm ma toleranciu 0.001)
+    train_residuals = (y_train - best_svr.predict(X_train)).abs()
+    print(f"SVR train: v pasme {(train_residuals <= 0.101).mean():.1%},"
+          f" na okraji pasma {((train_residuals - 0.1).abs() <= 0.001).mean():.1%}")
 
     print("\n--- porovnanie ---")
     rows = []
@@ -175,6 +195,8 @@ if __name__ == "__main__":
                                          ("SVM (SVR)", best_svr, svr_label, "residuals_svr.png")]:
         rows.append({"model": name, "nastavenie": label, **evaluate(model, *data)})
         plot_residuals(model, *data, filename, f"Reziduály: {name}", label)
+        print(name, end=": ")
+        residual_summary(model, X_test, y_test)
     table = pd.DataFrame(rows)
     print(table.round(3).to_string(index=False))
     plot_comparison(table)
